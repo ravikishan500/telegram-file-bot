@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 # --- AAPKI DETAILS HAIN ---
 API_ID = 39238534                     
 API_HASH = "bc0e02158c6a9d32dd4a0a1a803c55e9" 
-BOT_TOKEN = "8971123464:AAED6HfKvADj2IFn7tn_5lpK2rCMbGTkMlI"
+BOT_TOKEN = "8971123464:AAGHUTMzuLWWqcHQP7fXahBfZ3pIbeBJxh0"
 CHANNEL_ID = -1004458161660           
 # ---------------------------
 
