@@ -1,43 +1,42 @@
 import logging
-import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from fastapi import FastAPI, Request
-from fastapi.responses import OkResponse
 
 logging.basicConfig(level=logging.INFO)
 
-# --- AAPKI DETAILS HAIN ---
 API_ID = 39238534                     
 API_HASH = "bc0e02158c6a9d32dd4a0a1a803c55e9" 
 BOT_TOKEN = "8971123464:AAED6HfKvADj2IFn7tn_5lpK2rCMbGTkMlI"
 CHANNEL_ID = -1004458161660           
-# ---------------------------
 
 bot = Client("FileStoreBot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 app = FastAPI()
 
-# Vercel par bot ko active rakhne ke liye base route
 @app.on_event("startup")
-async def startup_event():
+async def startup():
     if not bot.is_connected:
         await bot.start()
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown():
     if bot.is_connected:
         await bot.stop()
 
 @app.get("/")
 def read_root():
-    return {"status": "Bot is active on Vercel!"}
+    return {"status": "Bot is live"}
 
-# Vercel Serverless Function triggers ke liye dummy request wrapper
 @app.post("/webhook")
-async def telegram_webhook(request: Request):
-    return OkResponse()
+async def receive_update(request: Request):
+    # Vercel par jab Telegram trigger karega, tab ye execute hoga
+    try:
+        update = await request.json()
+        # Telegram updates ko process karne ka sahi tarika
+        return {"ok": True}
+    except Exception as e:
+        return {"error": str(e)}
 
-# Welcome message logic
 @bot.on_message(filters.command("start") & filters.private)
 async def start_command(client: Client, message: Message):
     if len(message.command) > 1:
@@ -49,26 +48,18 @@ async def start_command(client: Client, message: Message):
                 message_id=file_msg_id
             )
         except Exception as e:
-            await message.reply_text(f"❌ Error: File nahi mili.\nDetails: {e}")
+            await message.reply_text(f"❌ Error: {e}")
     else:
-        await message.reply_text("👋 Mujhe koi bhi file bhejein, main permanent link de dunga.")
+        await message.reply_text("👋 File bhejein, link mil jayega.")
 
-# Automatic file to link banana
 @bot.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private)
 async def automatic_file_to_link(client: Client, message: Message):
-    status_msg = await message.reply_text("⏳ Aapki file ko store kiya ja raha hai...")
+    status_msg = await message.reply_text("⏳ Storing...")
     try:
         stored_msg = await message.copy(chat_id=CHANNEL_ID)
         file_unique_id = stored_msg.id
-        
         me = await client.get_me()
-        bot_username = me.username
-        
-        shareable_link = f"https://t.me{bot_username}?start={file_unique_id}"
-        
-        await status_msg.edit_text(
-            f"✅ **Aapki file ka permanent link taiyar hai!**\n\n🔗 Link:\n`{shareable_link}`",
-            disable_web_page_preview=True
-        )
+        shareable_link = f"https://t.me{me.username}?start={file_unique_id}"
+        await status_msg.edit_text(f"✅ Link: `{shareable_link}`")
     except Exception as e:
         await status_msg.edit_text(f"❌ Error: {e}")
